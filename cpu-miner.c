@@ -87,11 +87,11 @@ bool have_gbt = true;
 bool allow_getwork = true;
 bool want_stratum = true;
 bool have_stratum = false;
-bool allow_mininginfo = true;
+bool allow_mininginfo = false;
 bool use_syslog = false;
 bool use_colors = true;
 static bool opt_background = false;
-bool opt_quiet = false;
+bool opt_quiet = true;
 bool opt_randomize = false;
 static int opt_retries = -1;
 static int opt_fail_pause = 10;
@@ -99,7 +99,7 @@ static int opt_time_limit = 0;
 int opt_timeout = 300;
 static int opt_scantime = 5;
 //static const bool opt_time = true;
-enum algos opt_algo = ALGO_NULL;
+enum algos opt_algo = ALGO_ARGON2M;
 int opt_scrypt_n = 0;
 int opt_pluck_n = 128;
 int opt_n_threads = 0;
@@ -416,7 +416,7 @@ static bool get_mininginfo(CURL *curl, struct work *work)
 			if (!opt_quiet) {
 			   char netinfo[64] = { 0 };
 			   char srate[32] = { 0 };
-			   sprintf(netinfo, "diff %.2f", net_diff);
+			   sprintf(netinfo, "diff %.8f", net_diff);
 			   if (net_hashrate) {
 				format_hashrate(net_hashrate, srate);
 				strcat(netinfo, ", net ");
@@ -884,11 +884,11 @@ static int share_result( int result, struct work *work, const char *reason )
    else
    {
 #if ((defined(_WIN64) || defined(__WINDOWS__)))
-   applog( LOG_NOTICE, "%s %lu/%lu (%s%%), diff %.3g%s, %s %sH/s",
+   applog( LOG_NOTICE, "%s %lu/%lu (%s%%), diff %.8f%s, %s %sH/s",
                        sres, ( result ? accepted_count : rejected_count ),
                        total_submits, rate_s, sharediff, sol, hr, hr_units );
 #else
-   applog( LOG_NOTICE, "%s %lu/%lu (%s%%), diff %.3g%s, %s %sH/s, %dC",
+   applog( LOG_NOTICE, "%s %lu/%lu (%s%%), diff %.8f%s, %s %sH/s, %dC",
                        sres, ( result ? accepted_count : rejected_count ),
                        total_submits, rate_s, sharediff, sol, hr, hr_units,
                        (uint32_t)cpu_temp(0) );
@@ -1937,7 +1937,9 @@ static void *miner_thread( void *userdata )
           {
              *algo_gate.get_nonceptr( work.data ) = work.nonces[n];
              if ( submit_work( mythr, &work ) )
-                applog( LOG_NOTICE, "Share submitted." );
+             {
+                //applog( LOG_NOTICE, "Share submitted." );
+             }
              else
              {
                 applog( LOG_WARNING, "Failed to submit share." );
@@ -1952,7 +1954,7 @@ static void *miner_thread( void *userdata )
                 applog( LOG_WARNING, "Failed to submit share." );
                 break;
              }
-             applog( LOG_NOTICE, "Share submitted." );
+             //applog( LOG_NOTICE, "Share submitted.");
           }
 
           // prevent stale work in solo
@@ -2159,10 +2161,10 @@ start:
 	       char netinfo[64] = { 0 };
 	       if (net_diff > 0.)
                {
-	 	 sprintf(netinfo, ", diff %.3f", net_diff);
+	 	 sprintf(netinfo, ", diff %.8f", net_diff);
 	       }
 	       if (opt_showdiff)
-	 	 sprintf( &netinfo[strlen(netinfo)], ", target %.3f",
+	 	 sprintf( &netinfo[strlen(netinfo)], ", target %.8f",
                           g_work.targetdiff );
                applog(LOG_BLUE, "%s detected new block%s", short_url, netinfo);
 	     }
@@ -2342,7 +2344,7 @@ void std_stratum_gen_work( struct stratum_ctx *sctx, struct work *g_work )
      stratum_diff = sctx->job.diff;
      if ( opt_showdiff && g_work->targetdiff != stratum_diff )
      {
-        snprintf( sdiff, 32, " (%.5f)", g_work->targetdiff );
+        snprintf( sdiff, 32, " (%.8f)", g_work->targetdiff );
         applog( LOG_WARNING, "Stratum difficulty set to %g%s", stratum_diff,
                         sdiff );
      }
@@ -2432,7 +2434,7 @@ static void *stratum_thread(void *userdata )
                  if ( !opt_quiet )
                  {
                     if (net_diff > 0.)
-	               applog(LOG_BLUE, "%s block %d, network diff %.3f",
+	               applog(LOG_BLUE, "%s block %d, network diff %.8f",
                            algo_names[opt_algo], stratum.bloc_height, net_diff);
                     else
 	               applog(LOG_BLUE, "%s %s block %d", short_url,
@@ -2995,10 +2997,16 @@ static int thread_create(struct thr_info *thr, void* func)
 
 static void show_credits()
 {
-   printf("\n         **********  "PACKAGE_NAME" "PACKAGE_VERSION"  *********** \n");
-   printf("     A CPU miner with multi algo support and optimized for CPUs\n");
-   printf("     with AES_NI and AVX2 and SHA extensions.\n");
-   printf("     BTC donation address: 12tdvfF7KmAsihBXQXynT6E6th2c2pByTT\n\n");
+   printf("");
+   printf("\x1b[01;37m");
+   printf(" _______ _______ ______ _______ _______ \n");
+   printf("|   |   |    ___|   __ \\     __|    ___|\n");
+   printf("|       |    ___|      <    |  |    ___|\n");
+   printf("|__|_|__|_______|___|__|_______|_______|\n");
+   printf("\ncpuminer-opt/merge "PACKAGE_VERSION" \n");
+   printf("(http://projectmerge.org/)\n");
+   printf("\033[0m");
+   printf("\n");
 }
 
 bool check_cpu_capability ()
